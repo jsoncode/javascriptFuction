@@ -137,3 +137,14 @@ window.getRequest = function(toCase) {
         return params;
     }
 }
+
+/**************************** canvas *****************************/
+CanvasRenderingContext2D.prototype.sector=function(xAxis,yAxis,radius,startAngle,endAngle,bgColor){
+	this.moveTo(xAxis,yAxis);
+	this.arc(xAxis,yAxis,radius,startAngle,endAngle);
+	this.lineTo(xAxis,yAxis);
+	this.fillStyle=bgColor;
+	this.fill();
+	this.save();
+}
+/****************************  *****************************/
