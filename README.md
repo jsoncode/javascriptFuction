@@ -36,8 +36,9 @@ new Date('2016-09-01').format('MM/dd/yyyy');
 // 09/01/2016
 ```
 
-#### Date.format
-
+##  window
+----
+#### window.getRequest
 ```
 // Id=1&User=2
 getRequest('toLowerCase');
