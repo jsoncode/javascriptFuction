@@ -1,40 +1,42 @@
 # javascriptFuction
 > javascript functions
 
-
-### String.parseURL
+##String
+----
+#### String.parseURL
 ```
 location.href.parseURL()
 ```
 
-### String.dbLength 
+#### String.dbLength 
 ```
 '中国한の'.dbLength();
 //8
 ```
 
-### String.phoneNumFilter  
+#### String.phoneNumFilter  
 ```
 'balabala13838003800balabala13838003800'.phoneNumFilter();
 //balabala138****3800balabala138****3800
 ```
 
-### String.dateFormat  
+#### String.dateFormat  
 ```
 '2016-09-01'.dateFormat('MM/dd/yyyy');
 // 09/01/2016
 ```
 
-# Date
 
-### Date.format
+# Date
+----
+#### Date.format
 
 ```
 new Date('2016-09-01').format('MM/dd/yyyy');
 // 09/01/2016
 ```
 
-### Date.format
+#### Date.format
 
 ```
 // Id=1&User=2
