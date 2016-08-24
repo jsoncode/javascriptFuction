@@ -1,7 +1,6 @@
 
 /**************************** String *****************************/
 String.prototype.parseURL = function() {
-    //url解析
     var url = this.toString()
     var a = document.createElement('a');
     a.href = url;
@@ -35,6 +34,7 @@ String.prototype.parseURL = function() {
 }
 String.prototype.dbLength = function() {
     //get double charCode length
+    //eg: Chinese Korean Japanese...
     var str = this;
     var leg = str.length;
     for (var i in str) {
@@ -49,7 +49,7 @@ String.prototype.dbLength = function() {
 }
 
 String.prototype.phoneNumFilter = function(cf) {
-    //138****38000
+    //138****38000 only Chinese
     var str = this.toString();
     var confuse = cf || '*';
     var confuseStr = (function() {
@@ -59,7 +59,7 @@ String.prototype.phoneNumFilter = function(cf) {
         }
         return s;
     })();
-    var num = str.match(/(1\d{10})/g);
+    var num = str.match(/((\+86)?1\d{10})/g);
     if (num) {
         for (var i = 0, re; re = num[i++];) {
             var reg = new RegExp(re, 'g');
@@ -76,7 +76,7 @@ String.prototype.dateFormat = function(format) {
       if (isNaN(d)) {
           return 'NaN';
       } else {
-        //extend Date.format
+          //extend Date.format
           return new Date(s).format(format)
       }
   }
@@ -118,10 +118,10 @@ Date.prototype.format = function(formatString) {
 
 window.getRequest = function(toCase) {
     /**
-     * get url request paramas
-     * default null
-     * toLowerCase 转小写
-     * toUpperCase 转大写
+     * get url request params
+     * default
+     * toLowerCase
+     * toUpperCase
      */
     var params = location.href.parseURL().params;
     var arg = toCase && (toCase == 'toLowerCase' || toCase == 'toUpperCase');
