@@ -1,4 +1,4 @@
-# javascriptFuction
+# javascriptFuction api
 > javascript functions
 
 ----
@@ -43,5 +43,13 @@ new Date('2016-09-01').format('MM/dd/yyyy');
 // Id=1&User=2
 getRequest('toLowerCase');
 // {id:1,user:2}
+```
+----
+##  canvas
+#### canvas.getContext("2d").sector
+```
+var bgcanvas = document.querySelector("#bgcanvas");
+var ctx = bgcanvas.getContext("2d");
+ctx.sector(250,250,200,0,2*Math.PI,"#fff");
 ```
 
