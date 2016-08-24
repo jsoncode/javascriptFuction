@@ -3,25 +3,42 @@
 
 
 ### String.parseURL
-eg:
-
 ```
 location.href.parseURL()
 ```
 
 ### String.dbLength 
-eg:
-
 ```
 '中国한の'.dbLength();
 //8
 ```
 
 ### String.phoneNumFilter  
-eg:
+```
+'balabala13838003800balabala13838003800'.phoneNumFilter();
+//balabala138****3800balabala138****3800
+```
+
+### String.dateFormat  
+```
+'2016-09-01'.dateFormat('MM/dd/yyyy');
+// 09/01/2016
+```
+
+# Date
+
+### Date.format
 
 ```
-'balabala13838003800'.phoneNumFilter();
-//8
+new Date('2016-09-01').format('MM/dd/yyyy');
+// 09/01/2016
+```
+
+### Date.format
+
+```
+// Id=1&User=2
+getRequest('toLowerCase');
+// {id:1,user:2}
 ```
 
