@@ -1,8 +1,8 @@
 # javascriptFuction
 > javascript functions
 
-##String
 ----
+##String
 #### String.parseURL
 ```
 location.href.parseURL()
@@ -27,8 +27,8 @@ location.href.parseURL()
 ```
 
 
-# Date
 ----
+## Date
 #### Date.format
 
 ```
@@ -36,8 +36,8 @@ new Date('2016-09-01').format('MM/dd/yyyy');
 // 09/01/2016
 ```
 
-##  window
 ----
+##  window
 #### window.getRequest
 ```
 // Id=1&User=2
