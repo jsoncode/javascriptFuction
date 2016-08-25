@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title v-text="title">swipe nav</title>
+    <style>
+    html,
+    body,
+    .content {
+        height: 100%;
+    }
+    body{
+    	margin: 0;
+    }
+    </style>
+</head>
+
+<body>
+    <section class="content nav-hands">
+        <div class="container">
+            page content
+                <button type="button" onclick="swipeNav.show()">显示导航</button>
+        </div>
+    </section>
+    <nav class="app-swiper-nav" style="display:none;">
+        <div class="nav-container">
+            <div class="nav-innner">
+                nav content
+            </div>
+        </div>
+    </nav>
+    <script>
+    window.addEventListener('load',function(){
+    	swipeNav.init();
+    });
+    var swipeNav = {
+        mobile: /Mobile/i.test(navigator.userAgent),
+        weixin: /MQQBrowser|qq/i.test(navigator.userAgent),
+        nav: document.querySelector('.app-swiper-nav'), //导航区域
+        hands: document.querySelector('.nav-hands'), //用来显示导航的手柄区域
+        bgImg: 'static/img/bg2.jpg', //导航背景图片
+        duration: 300, //导航过度时常
+        moveStart: 0, //关闭时 开始位置
+        movePosition: 0, //关闭时 移动位移
+        moveTime: 0, //关闭时 动态过度时常
+        moveSpeed: 0, //关闭时 动态速度
+        moveCanHide: 0, //关闭时 是否满足隐藏条件
+        moveArea: 1 / 3, //关闭时 隐藏条件，距离屏幕边缘的百分百
+
+        handsStart: 0, //开启时 开始位置
+        handsPosition: 0, //开启时 移动位移
+        handsTime: 0, //开启时 动态过度时常
+        handsSpeed: 0, //开启时 动态速度
+        handsCanShow: false, //开启时 是否满足隐藏条件
+        handsArea: (function() { //开启时 隐藏条件，距离屏幕边缘的百分百
+            return 1 / (this.weixin ? 3 : 4);
+        })(),
+        /*导航样式*/
+        style: '.app-swiper-nav,.app-swiper-nav *{box-sizing: border-box;}.app-swiper-nav {position: fixed; top: 0; left: 0; height: 100%; width: 100%; z-index: 101; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; -webkit-transform: translate3d(-100%, 0, 0); -moz-transform: translate3d(-100%, 0, 0); -ms-transform: translate3d(-100%, 0, 0); transform: translate3d(-100%, 0, 0); } .app-swiper-nav .nav-container {position: relative; top: 0; left: 0; width: 100%; max-width: 300px; height: 100%; overflow: hidden; box-shadow: 1px 0 10px rgba(0, 0, 0, 0.5); } .app-swiper-nav .nav-container .nav-innner {position: absolute; top: 0; left: 0; height: 100%; width: 100%; z-index: 103; color: #fff; overflow-x: hidden; overflow-y: auto; } .app-swiper-nav .nav-container .nav-before-bg {position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 102; background-color: rgba(0, 0, 0, .2); } .app-swiper-nav .nav-container .nav-after-bg {position: absolute; top: -25px; left: -25px; width: 100%; height: 100%; box-sizing: content-box; -moz-box-sizing: content-box; -webkit-box-sizing: content-box; -webkit-filter: blur(15px); -moz-filter: blur(15px); -ms-filter: blur(15px); filter: blur(15px); padding: 25px; background-repeat: no-repeat; background-position: center; background-size: cover; background-color: #3d3d3d; z-index: 101; } .mobile.app-swiper-nav {background-color: rgba(0, 0, 0, 0.5); } .weixin.app-swiper-nav .nav-container .nav-after-bg {-webkit-filter: blur(0px); -moz-filter: blur(0px); -ms-filter: blur(0px); filter: blur(0px); }.nav-hands{overflow:auto;}',
+        touchHands: function(event) {
+            // 通过手柄显示导航
+            // 微信中禁止手势默认行为
+            if (this.weixin) event.preventDefault();
+            switch (event.type) {
+                case 'touchstart':
+                    this.handsCanShow = event.changedTouches[0].pageX < innerWidth * this.handsArea;
+                    if (this.handsCanShow) {
+                        this.handsTime = new Date().getTime();
+                        this.handsStart = event.changedTouches[0].pageX;
+                    }
+                    break;
+                case 'touchmove':
+                    if (this.handsCanShow) {
+                        this.handsPosition = event.changedTouches[0].pageX - this.handsStart;
+                        if (event.changedTouches[0].pageX > innerWidth) {
+                            this.handsPosition = innerWidth - this.handsStart
+                        }
+                        // 手势跟随
+                        this.nav.style = this.translate3d(this.handsPosition - innerWidth, 0);
+                    }
+                    break;
+                case 'touchend':
+                    if (this.handsCanShow) {
+                        this.handsSpeed = this.handsPosition / (new Date().getTime() - this.handsTime);
+                        var time = this.duration;
+                        if (this.handsPosition > innerWidth / 2 || this.handsSpeed > 0.5) {
+                            time = (innerWidth - this.handsPosition) / this.handsSpeed;
+                            if (time > this.duration) {
+                                time = this.duration;
+                            }
+                            this.show(time);
+                        } else {
+                            time = this.handsPosition / innerWidth / 2 * 1000;
+                            this.hide();
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+        },
+        touchEvent: function(event) {
+            switch (event.type) {
+                case 'touchstart':
+                    // 禁用默认行为
+                    if (this.weixin) event.preventDefault();
+                    this.moveCanHide = event.changedTouches[0].pageX > innerWidth * (1 - this.moveArea);
+                    if (this.moveCanHide) {
+                        //记录开始时间
+                        this.moveTime = new Date().getTime();
+                        //记录最初位置
+                        this.moveStart = event.changedTouches[0].pageX;
+                    }
+                    break;
+                case 'touchmove':
+                    if (this.moveCanHide) {
+                        //移动距离，取整
+                        this.movePosition = Math.ceil(event.changedTouches[0].pageX - this.moveStart);
+                        if (this.movePosition > 0) this.movePosition = 0;
+                        // 取绝对值
+                        this.movePosition = Math.abs(this.movePosition);
+                        // 手势跟随
+                        this.nav.style = this.translate3d(-this.movePosition, 0);
+                    }
+                    break;
+                case 'touchend':
+                    if (this.moveCanHide) {
+                        // 滑动速度
+                        this.moveSpeed = this.movePosition / (new Date().getTime() - this.moveTime);
+                        // 过度时间
+                        var time = self.duration;
+                        // 划过半屏，快速滑动
+                        if (this.movePosition > innerWidth / 2 || this.moveSpeed > 0.5) {
+                            // 滑动结束后，剩余的距离需要的过度时间
+                            time = (innerWidth - this.movePosition) / this.moveSpeed;
+                            // 防止时间过长，过度太慢
+                            if (time > this.duration) {
+                                time = this.duration;
+                            }
+                            // 收起导航
+                            this.hide(time);
+                        } else {
+                            //  滑动结束后，划过的距离需要的过度时间
+                            time = this.movePosition / innerWidth / 2 * 1000;
+                            // 显示导航
+                            this.show(time);
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+        },
+        show: function(time) {
+            var t = time || this.duration;
+            this.nav.style = this.translate3d(0, t);
+        },
+        hide: function(time) {
+            var t = time || this.duration;
+            this.nav.style = this.translate3d(-innerWidth, t);
+        },
+        init: function() {
+            var self = this;
+            /*add style*/
+            var style = document.createElement('style');
+            style.innerHTML = this.style;
+            document.querySelector('head').appendChild(style);
+            /*add before*/
+            var before = document.createElement('div');
+            before.className = 'nav-before-bg';
+            this.nav.querySelector('.nav-container').appendChild(before);
+            /*add after*/
+            var after = document.createElement('div');
+            after.className = 'nav-after-bg';
+            after.style.backgroundImage = 'url(' + self.bgImg + ')';
+            this.nav.querySelector('.nav-container').appendChild(after);
+            /*hide nav*/
+            self.nav.style = self.translate3d(-innerWidth, self.duration);
+            /*add class*/
+            if (this.mobile) self.nav.classList.add('mobile');
+            if (this.weixin) self.nav.classList.add('weixin');
+            /*mobile hide listener*/
+            self.nav.addEventListener('touchstart', function(event) {
+                self.touchEvent(event)
+            });
+            self.nav.addEventListener('touchmove', function(event) {
+                self.touchEvent(event)
+            });
+            self.nav.addEventListener('touchend', function(event) {
+                self.touchEvent(event)
+            });
+            /*mobile show listener*/
+            self.hands.addEventListener('touchstart', function(event) {
+                self.touchHands(event)
+            });
+            self.hands.addEventListener('touchmove', function(event) {
+                self.touchHands(event)
+            });
+            self.hands.addEventListener('touchend', function(event) {
+                self.touchHands(event)
+            });
+            /*pc hide nav*/
+            document.addEventListener('click', function() {
+                if (event.target.className == self.nav.className) self.hide(1000);
+            })
+            return self;
+        },
+        translate3d: function(x, time) {
+            return 'transform:translate3d(' + x + 'px,0,0);' +
+                'transition-duration:' + time + 'ms;';
+        }
+    };
+    </script>
+</body>
+
+</html>
