@@ -186,8 +186,7 @@ if (typeof String.prototype.phoneFilter != 'function') {
     };
 }
 if (typeof String.prototype.isPhone != 'function') {
-    String.prototype.isPhone = function() {
-        'use strict';
+    String.prototype.isPhone = function(showType) {
         var num = this.toString();
         var operators = ['移动', '联通', '电信'].map(function(v) {
             return '\u4e2d\u56fd' + v
@@ -204,32 +203,39 @@ if (typeof String.prototype.isPhone != 'function') {
         var back = false;
         if (!num) {
             return back;
-        }
+        };
         if (/^1[34578]\d{9}$/.test(num)) {
             var n = num.split('');
             if (obj[n[0]] !== false) {
                 if (typeof obj[n[0]] == 'number') {
-                    type = operators[n[0]];
+                    type = operators[obj[n[0]]];
                     back = true;
                 } else {
                     if (typeof obj[n[0]][n[1]] == 'number') {
-                        type = operators[n[1]];
+                        type = operators[obj[n[0]][n[1]]];
                         back = true;
                     } else {
                         if (typeof obj[n[0]][n[1]][n[2]] == 'number') {
-                            type = operators[n[2]];
+                            type = operators[obj[n[0]][n[1]][n[2]]];
                             back = true;
                         } else {
                             if (typeof obj[n[0]][n[1]][n[2]][n[3]] == 'number') {
-                                type = operators[n[3]];
+                                type = operators[obj[n[0]][n[1]][n[2]][n[3]]];
                                 back = true;
                             }
                         }
                     }
                 }
             }
+        };
+        if (showType) {
+            return {
+                is: back,
+                type: type
+            };
+        } else {
+            return back;
         }
-        return back;
     }
 }
 String.prototype.dateFormat = function(format) {
@@ -263,8 +269,16 @@ if (typeof window.Obj2Url != 'function') {
         }
     };
 };
+if (typeof window.randomString != 'function') {
+    window.randomString = function() {
+        var str = 'str';
+        str += Math.random() + new Date().getTime();
+        str = str.replace('.', '');
+        return str;
+    }
+}
 if (typeof window.hashString != 'function') {
-    window.hashString = function() {
+    window.uuid = function() {
         'use strict';
         var leg = arguments.length ? arguments[0] : 32;
         var lowcaseArr = [];
@@ -334,86 +348,288 @@ if (typeof Array.prototype.unique != 'function') {
         return n;
     }
 }
-var API = {
-    ajax: function(options) {
-        function empty() {}
-        var opt = {
-            url: '',//请求地址
-            sync: true, //true，异步 | false　同步，会锁死浏览器，并且open方法会报浏览器警告
-            method: 'GET',//提交方法
-            data: null,//提交数据
-            username: null,//账号
-            password: null,//密码
-            dataType: null,//返回数据类型
-            success: empty,//成功返回回调
-            error: empty,//错误信息回调
-            timeout: 0,//请求超时ms
-        };
-        for (var i in options) {
-            if (options.hasOwnProperty(i)) opt[i] = options[i];
-        }
-        var accepts = {
-            script: 'text/javascript, application/javascript, application/x-javascript',
-            json: 'application/json',
-            xml: 'application/xml, text/xml',
-            html: 'text/html',
-            text: 'text/plain'
-        };
-        var abortTimeout = null;
-        var xhr = new XMLHttpRequest();
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState == 4) {
-                xhr.onreadystatechange = empty;
-                clearTimeout(abortTimeout);
-                var result, error = false,
-                    dataType;
-                if ((xhr.status >= 200 && xhr.status < 300) || xhr.status == 304 || (xhr.status == 0 && protocol == 'file:')) {
-                    if (xhr.responseType == 'arraybuffer' || xhr.responseType == 'blob') {
-                        result = xhr.response;
-                    } else {
-                        result = xhr.responseText;
-                        dataType = opt.dataType ? opt.dataType : xhr.getResponseHeader('content-type').split(';', 1)[0];
-                        for (var i in accepts) {
-                            if (accepts.hasOwnProperty(i) && accepts[i].indexOf(dataType) > -1) {
-                                dataType = i;
-                            }
-                        }
-                        try {
-                            if (dataType == 'script') {
-                                eval(result);
-                            } else if (dataType == 'xml') {
-                                result = xhr.responseXML
-                            } else if (dataType == 'json') {
-                                result = result.trim() == '' ? null : JSON.parse(result)
-                            }
-                        } catch (e) {
-                            opt.error(e, xhr);
-                            xhr.abort();
+
+var ajax = function(options) {
+    function empty() {}
+    var opt = {
+        url: '', //请求地址
+        sync: true, //true，异步 | false　同步，会锁死浏览器，并且open方法会报浏览器警告
+        method: 'GET', //提交方法
+        data: null, //提交数据
+        username: null, //账号
+        password: null, //密码
+        dataType: null, //返回数据类型
+        success: empty, //成功返回回调
+        error: empty, //错误信息回调
+        timeout: 0, //请求超时ms
+    };
+    for (var i in options) {
+        if (options.hasOwnProperty(i) && options[i] !== undefined) opt[i] = options[i];
+    };
+    var accepts = {
+        script: 'text/javascript, application/javascript, application/x-javascript',
+        json: 'application/json',
+        xml: 'application/xml, text/xml',
+        html: 'text/html',
+        text: 'text/plain'
+    };
+    var abortTimeout = null;
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            xhr.onreadystatechange = empty;
+            clearTimeout(abortTimeout);
+            var result, error = false,
+                dataType;
+            if ((xhr.status >= 200 && xhr.status < 300) || xhr.status == 304 || (xhr.status == 0 && location.protocol == 'file:')) {
+                if (xhr.responseType == 'arraybuffer' || xhr.responseType == 'blob') {
+                    result = xhr.response;
+                } else {
+                    result = xhr.responseText;
+                    dataType = opt.dataType ? opt.dataType : xhr.getResponseHeader('content-type').split(';', 1)[0];
+                    for (var i in accepts) {
+                        if (accepts.hasOwnProperty(i) && accepts[i].indexOf(dataType) > -1) {
+                            dataType = i;
                         }
                     }
-                    opt.success(result, xhr);
+                    try {
+                        if (dataType == 'script') {
+                            eval(result);
+                        } else if (dataType == 'xml') {
+                            result = xhr.responseXML
+                        } else if (dataType == 'json') {
+                            result = result.trim() == '' ? null : JSON.parse(result);
+                        }
+                    } catch (e) {
+                        opt.error(e, xhr);
+                        xhr.abort();
+                    }
+                }
+                opt.success(result, xhr);
+            } else {
+                opt.error(xhr.statusText, xhr);
+            }
+        }
+    };
+    if (opt.method == 'GET') {
+        var parse = opt.url.parseURL();
+        opt.data = Object.assign({}, opt.data, parse.params);
+        opt.url = parse.pathname + '?' + toUrl(opt.data);
+        opt.data = null;
+    };
+    xhr.open(opt.method, opt.url, opt.sync, opt.username, opt.password);
+    if (opt.method == 'POST') {
+        xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    };
+    if (opt.timeout > 0) {
+        abortTimeout = setTimeout(function() {
+            xhr.onreadystatechange = empty;
+            xhr.abort();
+            opt.error('timeout', xhr);
+        }, opt.timeout);
+    };
+    xhr.send(opt.data ? toUrl(opt.data) : null);
+};
+var request = (function() {
+    var req = location.href.parseURL().params;
+    var nReq = {};
+    for (var i in req) {
+        if (req.hasOwnProperty(i)) {
+            var v = req[i];
+            var k = i.toLowerCase();
+            // 过滤微信加的参数，导致无法支付的问题 form=groupmessage
+            if (k != 'from') {
+                if (isNaN(parseInt(v))) {
+                    nReq[k] = v;
                 } else {
-                    opt.error(xhr.statusText, xhr);
+                    nReq[k] = v * 1;
                 }
             }
-        };
-        if (opt.method == 'GET') {
-            var parse = opt.url.parseURL();
-            opt.data = Object.assign({}, opt.data, parse.params);
-            opt.url = parse.pathname + '?' + obj2Url(opt.data);
-            opt.data = null;
         }
-        xhr.open(opt.method, opt.url, opt.sync, opt.username, opt.password);
-        if (opt.method == 'POST') {
-            xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-        }
-        if (opt.timeout > 0) {
-            abortTimeout = setTimeout(function() {
-                xhr.onreadystatechange = empty
-                xhr.abort();
-                opt.error('timeout', xhr);
-            }, opt.timeout)
-        }
-        xhr.send(opt.data ? obj2Url(opt.data) : null);
     }
+    if (nReq.instituteid == undefined) {
+        nReq.instituteid = 1;
+    }
+    return nReq;
+})();
+var browser = (function() {
+    var ua = window.navigator.userAgent;
+    var os = {
+        android: ua.match(/android [\d\.]+/i),
+        ios: ua.match(/(iphone|ipad|ipod|itouch);[\w\s]+[\d_]+/i),
+        mac: ua.match(/mac[\w\s]+[\d_]+/i),
+        windows: ua.match(/windows[\w\s]+[\d\.]+/i),
+        ie: ua.match(/(Edge|ie|rv)[\/\s:][\d.]+/i),
+        weixin: ua.match(/micromessenger\/[\d\.]+/i),
+        weixinJSBridge: typeof WeixinJSBridge == "object",
+        mqqbrowser: ua.match(/mqqbrowser\/[\d\.]+/i),
+        weibo: ua.match(/weibo[\d\._]+/i),
+        qq: ua.match(/qq\/[\d\._]+/i),
+        chrome: ua.match(/chrome[\/\s]+[\d\._]+/i),
+    };
+    var v = {};
+    for (var i in os) {
+        if (os.hasOwnProperty(i)) {
+            if (os[i]) {
+                var result = os[i][0];
+                var version = result.match(/[\d\._]+/)[0];
+                version = version.replace(/^_+|_+$/g, '');
+                version = version.replace(/_+/g, '.');
+                v[i + 'V'] = version;
+                os[i] = true
+            }
+        }
+    }
+    os = Object.assign({}, os, v);
+    os.mobile = /mobile/i.test(ua) ? true : null;
+    os.nettype = /nettype/i.test(ua) ? ua.match(/nettype\/\w+/i)[0].split('/')[1].toLowerCase() : null;
+    os.tbs = /tbs/i.test(ua) ? ua.match(/tbs\/\d+/i)[0].split('/')[1] : null;
+    if (os.chrome && os.chromeV.match(/\d+/ > 100)) {
+        os.chrome = null;
+        os.chromeV = null;
+    }
+    return os;
+})();
+function loadCss(url, back, err) {
+    var back = back || function() {};
+    var err = err || function() {};
+    var link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = url;
+    document.head.appendChild(link);
+    link.addEventListener('load', function() {
+        back();
+    }, false);
+    link.addEventListener('error', function() {
+        err();
+    }, false);
+};
+
+function loadScript(src, back, err) {
+    var back = back || function() {};
+    var err = err || function() {};
+    var script = document.createElement('script');
+    script.src = src;
+    document.body.appendChild(script);
+    script.addEventListener('load', function() {
+        back();
+    }, false);
+    script.addEventListener('error', function() {
+        err();
+    }, false);
 }
+
+function loadFile(files, back) {
+    if (arguments.length == 0) {
+        return;
+    }
+    var list = [];
+    if (files instanceof Array) {
+        list = files;
+    } else {
+        list = [files];
+    };
+    var back = back || function() {};
+    var loaded = 0;
+    for (var i = 0; i < list.length; i++) {
+        var file = list[i];
+        var iscss = /css$/.test(file);
+        if (iscss) {
+            loadCss(file, function() {
+                common();
+            }, function() {
+                common();
+            });
+        } else {
+            loadScript(file, function() {
+                common();
+            }, function() {
+                common();
+            });
+        }
+    }
+
+    function common() {
+        loaded++;
+        if (list.length == loaded) {
+            back();
+        }
+    };
+};
+function setPageTitle(title) {
+    document.title = title === undefined ? document.title : title;
+    if (browser.weixin) {
+        var iframe = document.createElement('iframe');
+        iframe.src = 'favicon.ico';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+        iframe.onload = function() {
+            setTimeout(function() {
+                iframe.parentNode.removeChild(iframe);
+            }, 9);
+        }
+    }
+};
+if (typeof String.prototype.decode != 'function') {
+    String.prototype.decode = function() {
+        var str = this.toString();
+        try {
+            str = decodeURIComponent(str)
+        } catch (e) {}
+        return str;
+    };
+};
+if (typeof String.prototype.encode != 'function') {
+    String.prototype.encode = function() {
+        return encodeURIComponent(this.toString())
+    };
+};
+//加法函数
+Number.prototype.plus = function(arg) {
+    var arg1 = this;
+    var arg2 = arg;
+    var r1, r2, m;
+    try { r1 = arg1.toString().split(".")[1].length } catch (e) { r1 = 0 }
+    try { r2 = arg2.toString().split(".")[1].length } catch (e) { r2 = 0 }
+    m = Math.pow(10, Math.max(r1, r2));
+    return (arg1 * m + arg2 * m) / m;
+};
+//减法函数
+Number.prototype.subtract = function(arg) {
+    var arg1 = this;
+    var arg2 = arg;
+    var r1, r2, m, n;
+    try { r1 = arg1.toString().split(".")[1].length } catch (e) { r1 = 0 }
+    try { r2 = arg2.toString().split(".")[1].length } catch (e) { r2 = 0 }
+    m = Math.pow(10, Math.max(r1, r2));
+    //last modify by deeka
+    //动态控制精度长度
+    n = (r1 >= r2) ? r1 : r2;
+    return ((arg2 * m - arg1 * m) / m).toFixed(n);
+};
+//乘法函数
+Number.prototype.multiply = function(arg) {
+    var arg1 = this;
+    var arg2 = arg;
+    var m = 0,
+        s1 = arg1.toString(),
+        s2 = arg2.toString();
+    try { m += s1.split(".")[1].length } catch (e) {};
+    try { m += s2.split(".")[1].length } catch (e) {};
+    return Number(s1.replace(".", "")) * Number(s2.replace(".", "")) / Math.pow(10, m);
+};
+//除法函数
+Number.prototype.divide = function(arg) {
+    var arg1 = this;
+    var arg2 = arg;
+    var t1 = 0,
+        t2 = 0,
+        r1, r2;
+    try { t1 = arg1.toString().split(".")[1].length } catch (e) {};
+    try { t2 = arg2.toString().split(".")[1].length } catch (e) {};
+    with(Math) {
+        r1 = Number(arg1.toString().replace(".", ""));
+        r2 = Number(arg2.toString().replace(".", ""));
+        return (r1 / r2) * pow(10, t2 - t1);
+    }
+};
