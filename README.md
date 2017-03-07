@@ -2,12 +2,19 @@
 
 ```
 document.querySelector('li').closet('ul');
+
 Object.assign({},{a:1},{b:2});  // {a:1,b:2}
+
 Object.assign({},{a:1,b:{a:1}},{b:{c:2}});  // {a:1,b:{c:2}}
+
 new Date().format();  //default yyyy/MM/dd HH:mm:ss
+
 new Date().format('yyyy.MM.dd HHmmss');
+
 location.href.parseURL(); // like location
+
 'http://a.io?a=1#b'.parseURL();
+
 /**
 {
     "source": "http://a.io/js/index.js?a=1#b",
@@ -30,6 +37,7 @@ location.href.parseURL(); // like location
 */
 
 '汉字'.dbLength(); //4
+
 '汉字abc'.dbLength(); //7
 
 '13800138000'.phoneFilter(); // 138****8000
