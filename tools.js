@@ -188,6 +188,7 @@ if (typeof String.prototype.phoneFilter != 'function') {
 if (typeof String.prototype.isPhone != 'function') {
     String.prototype.isPhone = function(showType) {
         var num = this.toString();
+        num = num.replace(/^\+86/,'');
         var operators = ['移动', '联通', '电信'].map(function(v) {
             return '\u4e2d\u56fd' + v
         });
