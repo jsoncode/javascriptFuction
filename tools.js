@@ -14,37 +14,6 @@
             return el.matches ? el : null;
         }
     }
-    window.isFullScreen = function() {
-        return document.fullScreenElement || document.webkitIsFullScreen || document.mozFullScreen || document.oFullScreen || document.fullScreen;
-    }
-    window.requestFullScreen = function(element) {
-        if (element.requestFullscreen)
-            element.requestFullscreen();
-        else if (element.msRequestFullscreen)
-            element.msRequestFullscreen();
-        else if (element.mozRequestFullScreen)
-            element.mozRequestFullScreen();
-        else if (element.webkitRequestFullscreen)
-            element.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
-    }
-
-    window.exitFullScreen = function() {
-        if (document.exitFullscreen)
-            document.exitFullscreen();
-        else if (document.msExitFullscreen)
-            document.msExitFullscreen();
-        else if (document.mozCancelFullScreen)
-            document.mozCancelFullScreen();
-        else if (document.webkitExitFullscreen)
-            document.webkitExitFullscreen();
-    }
-
-    window.toggleFullScreen = function(element) {
-        if (isFullScreen())
-            cancelFullScreen();
-        else
-            requestFullScreen(element || document.documentElement);
-    }
 })(Element.prototype);
 
 if (typeof Object.assign != 'function') {
@@ -278,7 +247,7 @@ if (typeof window.randomString != 'function') {
         return str;
     }
 }
-if (typeof window.hashString != 'function') {
+if (typeof window.uuid != 'function') {
     window.uuid = function() {
         'use strict';
         var leg = arguments.length ? arguments[0] : 32;
