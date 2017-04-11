@@ -600,3 +600,87 @@ Number.prototype.divide = function(arg) {
         return (r1 / r2) * pow(10, t2 - t1);
     }
 };
+
+var checkIdCard = {
+    zh:function (number) {
+        // 中国居民身份证
+        var num = number.replace(/\s+/g, '');
+        if (/^\d{17}[\dx]$/.test(num)) {
+            return true;
+        }else{
+            return false;
+        }
+    },
+    passport:function (number) {
+        // 护照
+        var num = number.replace(/\s+/g, '');
+        if (/^[eg]\d{8}$/i.test(num)) {
+            return true;
+        }else{
+            return false;
+        }
+    },
+    officers:function (number) {
+        // 护照
+        var num = number.replace(/\s+/g, '');
+        if (/^\d{8}$/.test(num)) {
+            return true;
+        }else{
+            return false;
+        }
+    },
+    hk: function(number) {
+        // 香港身份证
+        var num = number.replace(/\s+/g, '');
+        if (/^[a-zA-Z]\d{6}[（\(][aA0-9][\)）]$/.test(num)) {
+            var codeTable = [0, "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"];
+            var firstCode = num.substr(0, 1).toUpperCase();
+            var firstNum = codeTable.indexOf(firstCode);
+            var codeNum = num.match(/\d{6}/)[0].split('').map(function(v, i) {
+                return v * (7 - i) }).reduce(function(v1, v2) {
+                return v1 + v2 });
+            var checkCode = num.match(/(?![（\(])[aA0-9](?=[\)）])/)[0].toUpperCase();
+            var resultCheckCode = (firstNum * 8 + codeNum) % 11;
+            if (resultCheckCode == 1) {
+                resultCheckCode = 'A';
+            } else {
+                resultCheckCode = 11 - resultCheckCode;
+            }
+            return checkCode == resultCheckCode;
+        } else {
+            return false;
+        }
+    },
+    mac: function(number) {
+        // 澳门身份证
+        var num = number.replace(/\s+/g, '');
+        if (/^[157]\/?\d{6}$\/?[（\(]\d[\)）]$/.test(num)) {
+            return true;
+        } else {
+            return false;
+        }
+    },
+    tw: function(number) {
+        // 台湾身份证
+        var num = number.replace(/\s+/g, '');
+        if (/^[a-zA-Z][12]\d{8}$/.test(num)) {
+            var codeTable = { A: [1, 0], B: [1, 1], C: [1, 2], D: [1, 3], E: [1, 4], F: [1, 5], G: [1, 6], H: [1, 7], I: [3, 4], J: [1, 8], K: [1, 9], L: [2, 0], M: [2, 1], N: [2, 2], O: [3, 5], P: [2, 3], Q: [2, 4], R: [2, 5], S: [2, 6], T: [2, 7], U: [2, 8], V: [2, 9], W: [3, 2], X: [3, 0], Y: [3, 1], Z: [3, 3] };
+            var firstNums = codeTable[num.substr(0, 1)];
+            var code = num.match(/\d{8}/)[0].split('');
+            code.unshift(firstNums[1]);
+            code = code.map(function (v,i) {
+                return v*(9-i)
+            }).reduce(function (v1,v2) {
+                return v1+v2;
+            });
+            var endNum = num.match(/\d$/)[0]; 
+            var resultNum = 10-(firstNums[0]+code)%10;
+            return resultNum==endNum;
+        } else {
+            return false;
+        }
+    },
+    checkAll:function (number) {
+        return this.zh(number)|| this.hk(number)|| this.mac(number)|| this.tw(number)
+    }
+};
