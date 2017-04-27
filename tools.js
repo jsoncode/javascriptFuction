@@ -713,3 +713,18 @@ var checkIdCard = {
         return this.zh(number)|| this.hk(number)|| this.mac(number)|| this.tw(number)
     }
 };
+
+function uploadFile(file,fileName,back) {
+    var file = file;
+    var formdata = new FormData();
+    formdata.append(fileName, file);
+    var xhr = new XMLHttpRequest();
+    xhr.addEventListener('readystatechange', function() {
+        if (xhr.readyState == 4) {
+            var data = JSON.parse(xhr.responseText);
+            typeof back =='function'&&back(data);
+        }
+    });
+    xhr.open('POST', 'url');
+    xhr.send(formdata);
+}
