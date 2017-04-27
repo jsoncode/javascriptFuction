@@ -1,212 +1,163 @@
-(function(ElementPrototype) {
+
+Date.prototype.format = function(formatString) {
     'use strict';
-    if (typeof ElementPrototype.closest != 'function') {
-        ElementPrototype.matches = ElementPrototype.matches || ElementPrototype.matchesSelector || ElementPrototype.webkitMatchesSelector || ElementPrototype.msMatchesSelector || function(selector) {
-            var node = this,
-                nodes = (node.parentNode || node.document).querySelectorAll(selector),
-                i = -1;
-            while (nodes[++i] && nodes[i] != node);
-            return !!nodes[i];
-        }
-        ElementPrototype.closest = ElementPrototype.closest || function(selector) {
-            var el = this;
-            while (el.matches && !el.matches(selector)) el = el.parentNode;
-            return el.matches ? el : null;
+    var o = {
+        Y: this.getFullYear(),
+        M: this.getMonth() + 1,
+        D: this.getDate(),
+        H: this.getHours(),
+        m: this.getMinutes(),
+        S: this.getSeconds()
+    };
+    var reg = new RegExp('[Yy]+|M+|[Dd]+|[Hh]+|m+|[Ss]+', 'g');
+    var regM = new RegExp('m');
+    var regY = new RegExp('y', 'i');
+    if (formatString) {
+        return formatString.replace(reg, function(v) {
+            var old = v;
+            if (regM.test(v)) {
+                old = o.m;
+            } else if (regY.test(v)) {
+                var y = '' + o.Y;
+                var le = y.length - (v.length == 1 ? 2 : v.length);
+                old = y.substring(y.length, le)
+            } else {
+                var key = v.toUpperCase().substr(0, 1);
+                old = o[key];
+                if (v.length > 1 && o[key] < 10) {
+                    old = '0' + old;
+                }
+            }
+            return old;
+        });
+    } else {
+        return this.format('yyyy/MM/dd HH:mm:ss');
+    }
+};
+String.prototype.parseURL = function() {
+    'use strict';
+    //url解析
+    var url = this.toString()
+    var a = document.createElement('a');
+    a.href = url;
+    return {
+        source: url,
+        protocol: a.protocol,
+        origin: a.origin,
+        hostname: a.hostname,
+        port: a.port,
+        search: a.search,
+        file: (a.pathname.match(/\/([^\/?#]+)$/i) || [, ''])[1],
+        hash: a.hash.replace('#', ''),
+        pathname: a.pathname.replace(/^([^\/])/, '/$1'),
+        relative: (a.href.match(/tps?:\/\/[^\/]+(.+)/) || [, ''])[1],
+        segments: a.pathname.replace(/^\//, '').split('/'),
+        params: (function() {
+            var ret = {};
+            var seg = a.search.replace(/^\?/, '').split('&').filter(function(v, i) {
+                if (v !== '' && v.indexOf('=')) {
+                    return true;
+                }
+            });
+            for (var i = 0, element; element = seg[i++];) {
+                var idx = element.indexOf('=');
+                var key = element.substring(0, idx);
+                var val = element.substring(idx + 1);
+                ret[key] = val;
+            }
+            return ret
+        })()
+    }
+};
+
+String.prototype.dbLength = function() {
+    'use strict';
+    //判断双字节字符串长度
+    var str = this;
+    var leg = str.length;
+    for (var i in str) {
+        if (str.hasOwnProperty(i)) {
+            var s = str[i];
+            //转换Unicode 编码,再转16进制
+            var db = s.charCodeAt(0).toString(16).length == 4;
+            if (db) leg += 1;
         }
     }
-})(Element.prototype);
-
-if (typeof Object.assign != 'function') {
-    Object.assign = function(target) {
-        'use strict';
-        if (target == null) {
-            throw new TypeError('Cannot convert undefined or null to object');
+    return leg;
+};
+String.prototype.phoneFilter = function(cf) {
+    'use strict';
+    //138****38000
+    var str = this.toString();
+    var confuse = cf || '*';
+    var confuseStr = (function() {
+        var s = '';
+        for (var i = 0; i < 4; i++) {
+            s += confuse;
         }
-
-        target = Object(target);
-        for (var index = 1; index < arguments.length; index++) {
-            var source = arguments[index];
-            if (source != null) {
-                for (var key in source) {
-                    if (Object.prototype.hasOwnProperty.call(source, key)) {
-                        target[key] = source[key];
-                    }
-                }
-            }
+        return s;
+    })();
+    var num = str.match(/(1\d{10})/g);
+    if (num) {
+        for (var i = 0, re; re = num[i++];) {
+            var reg = new RegExp(re, 'g');
+            var pre = re.substr(0, 3);
+            var end = re.substr(7, 4)
+            str = str.replace(reg, pre + confuseStr + end);
         }
-        return target;
+    }
+    return str;
+};
+String.prototype.isPhone = function(showType) {
+    var num = this.toString();
+    num = num.replace(/^\+86/,'');
+    var operators = ['移动', '联通', '电信'].map(function(v) {
+        return '\u4e2d\u56fd' + v
+    });
+    operators.push('未知号段');
+    var obj = [!1, [!1, !1, !1, [1, 1, 1, 2, [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, !1], 0, 0, 0, 0, 0, !1],
+        [3, 3, 3, 3, 3, 1, 3, 0, 1, 2, !1],
+        [0, 0, 0, 2, 1, 1, 1, 0, 0, 0, !1], !1, [
+            [2, 2, 2, 0, 1, 0, 0, 1, 1, 1, !1], 1, !1, 2, !1, 1, 1, 2, 0, !1, !1
+        ],
+        [2, 2, 0, 0, 0, 1, 1, 0, 0, 2, !1], !1, !1
+    ], !1, !1, !1, !1, !1, !1, !1, !1];
+    var type = '';
+    var back = false;
+    if (!num) {
+        return back;
     };
-}
-if (typeof Date.prototype.format != 'function') {
-    Date.prototype.format = function(formatString) {
-        'use strict';
-        var o = {
-            Y: this.getFullYear(),
-            M: this.getMonth() + 1,
-            D: this.getDate(),
-            H: this.getHours(),
-            m: this.getMinutes(),
-            S: this.getSeconds()
-        };
-        var reg = new RegExp('[Yy]+|M+|[Dd]+|[Hh]+|m+|[Ss]+', 'g');
-        var regM = new RegExp('m');
-        var regY = new RegExp('y', 'i');
-        if (formatString) {
-            return formatString.replace(reg, function(v) {
-                var old = v;
-                if (regM.test(v)) {
-                    old = o.m;
-                } else if (regY.test(v)) {
-                    var y = '' + o.Y;
-                    var le = y.length - (v.length == 1 ? 2 : v.length);
-                    old = y.substring(y.length, le)
-                } else {
-                    var key = v.toUpperCase().substr(0, 1);
-                    old = o[key];
-                    if (v.length > 1 && o[key] < 10) {
-                        old = '0' + old;
-                    }
-                }
-                return old;
-            });
-        } else {
-            return this.format('yyyy/MM/dd HH:mm:ss');
-        }
-    };
-}
-if (typeof String.prototype.parseURL != 'function') {
-    String.prototype.parseURL = function() {
-        'use strict';
-        //url解析
-        var url = this.toString()
-        var a = document.createElement('a');
-        a.href = url;
-        return {
-            source: url,
-            protocol: a.protocol,
-            origin: a.origin,
-            hostname: a.hostname,
-            port: a.port,
-            search: a.search,
-            file: (a.pathname.match(/\/([^\/?#]+)$/i) || [, ''])[1],
-            hash: a.hash.replace('#', ''),
-            pathname: a.pathname.replace(/^([^\/])/, '/$1'),
-            relative: (a.href.match(/tps?:\/\/[^\/]+(.+)/) || [, ''])[1],
-            segments: a.pathname.replace(/^\//, '').split('/'),
-            params: (function() {
-                var ret = {};
-                var seg = a.search.replace(/^\?/, '').split('&').filter(function(v, i) {
-                    if (v !== '' && v.indexOf('=')) {
-                        return true;
-                    }
-                });
-                for (var i = 0, element; element = seg[i++];) {
-                    var idx = element.indexOf('=');
-                    var key = element.substring(0, idx);
-                    var val = element.substring(idx + 1);
-                    ret[key] = val;
-                }
-                return ret
-            })()
-        }
-    };
-}
-
-if (typeof String.prototype.dbLength != 'function') {
-    String.prototype.dbLength = function() {
-        'use strict';
-        //判断双字节字符串长度
-        var str = this;
-        var leg = str.length;
-        for (var i in str) {
-            if (str.hasOwnProperty(i)) {
-                var s = str[i];
-                //转换Unicode 编码,再转16进制
-                var db = s.charCodeAt(0).toString(16).length == 4;
-                if (db) leg += 1;
-            }
-        }
-        return leg;
-    };
-}
-
-if (typeof String.prototype.phoneFilter != 'function') {
-    String.prototype.phoneFilter = function(cf) {
-        'use strict';
-        //138****38000
-        var str = this.toString();
-        var confuse = cf || '*';
-        var confuseStr = (function() {
-            var s = '';
-            for (var i = 0; i < 4; i++) {
-                s += confuse;
-            }
-            return s;
-        })();
-        var num = str.match(/(1\d{10})/g);
-        if (num) {
-            for (var i = 0, re; re = num[i++];) {
-                var reg = new RegExp(re, 'g');
-                var pre = re.substr(0, 3);
-                var end = re.substr(7, 4)
-                str = str.replace(reg, pre + confuseStr + end);
-            }
-        }
-        return str;
-    };
-}
-if (typeof String.prototype.isPhone != 'function') {
-    String.prototype.isPhone = function(showType) {
-        var num = this.toString();
-        num = num.replace(/^\+86/,'');
-        var operators = ['移动', '联通', '电信'].map(function(v) {
-            return '\u4e2d\u56fd' + v
-        });
-        operators.push('未知号段');
-        var obj = [!1, [!1, !1, !1, [1, 1, 1, 2, [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, !1], 0, 0, 0, 0, 0, !1],
-            [3, 3, 3, 3, 3, 1, 3, 0, 1, 2, !1],
-            [0, 0, 0, 2, 1, 1, 1, 0, 0, 0, !1], !1, [
-                [2, 2, 2, 0, 1, 0, 0, 1, 1, 1, !1], 1, !1, 2, !1, 1, 1, 2, 0, !1, !1
-            ],
-            [2, 2, 0, 0, 0, 1, 1, 0, 0, 2, !1], !1, !1
-        ], !1, !1, !1, !1, !1, !1, !1, !1];
-        var type = '';
-        var back = false;
-        if (!num) {
-            return back;
-        };
-        if (/^1[34578]\d{9}$/.test(num)) {
-            var n = num.split('');
-            if (obj[n[0]] !== false) {
-                if (typeof obj[n[0]] == 'number') {
-                    type = operators[obj[n[0]]];
+    if (/^1[34578]\d{9}$/.test(num)) {
+        var n = num.split('');
+        if (obj[n[0]] !== false) {
+            if (typeof obj[n[0]] == 'number') {
+                type = operators[obj[n[0]]];
+                back = true;
+            } else {
+                if (typeof obj[n[0]][n[1]] == 'number') {
+                    type = operators[obj[n[0]][n[1]]];
                     back = true;
                 } else {
-                    if (typeof obj[n[0]][n[1]] == 'number') {
-                        type = operators[obj[n[0]][n[1]]];
+                    if (typeof obj[n[0]][n[1]][n[2]] == 'number') {
+                        type = operators[obj[n[0]][n[1]][n[2]]];
                         back = true;
                     } else {
-                        if (typeof obj[n[0]][n[1]][n[2]] == 'number') {
-                            type = operators[obj[n[0]][n[1]][n[2]]];
+                        if (typeof obj[n[0]][n[1]][n[2]][n[3]] == 'number') {
+                            type = operators[obj[n[0]][n[1]][n[2]][n[3]]];
                             back = true;
-                        } else {
-                            if (typeof obj[n[0]][n[1]][n[2]][n[3]] == 'number') {
-                                type = operators[obj[n[0]][n[1]][n[2]][n[3]]];
-                                back = true;
-                            }
                         }
                     }
                 }
             }
-        };
-        if (showType) {
-            return {
-                is: back,
-                type: type
-            };
-        } else {
-            return back;
         }
+    };
+    if (showType) {
+        return {
+            is: back,
+            type: type
+        };
+    } else {
+        return back;
     }
 }
 String.prototype.dateFormat = function(format) {
@@ -221,108 +172,6 @@ String.prototype.dateFormat = function(format) {
     }
 }
 
-/**************************** window *****************************/
-
-function toUrl(obj) {
-    if (obj && obj instanceof Object) {
-        var arr = [];
-        for (var i in obj) {
-            if (obj.hasOwnProperty(i)) {
-                if (Array.isArray(obj[i])) {
-                    obj[i].forEach(function(v) {
-                        arr.push(escape(i) + '=' + escape(v));
-                    });
-                } else {
-                    if (typeof obj[i] == 'function') obj[i] = obj[i]();
-                    if (obj[i] == null || obj[i] == undefined) obj[i] = '';
-                    arr.push(escape(i) + '=' + escape(obj[i]));
-                }
-            }
-        }
-        return arr.join('&').replace(/%20/g, '+');
-    } else {
-        return obj;
-    }
-};
-if (typeof window.randomString != 'function') {
-    window.randomString = function() {
-        var str = 'str';
-        str += Math.random() + new Date().getTime();
-        str = str.replace('.', '');
-        return str;
-    }
-}
-if (typeof window.uuid != 'function') {
-    window.uuid = function() {
-        'use strict';
-        var leg = arguments.length ? arguments[0] : 32;
-        var lowcaseArr = [];
-        var uppercaseArr = [];
-        var numArr = [];
-        for (var i = 0; i < 26; i++) {
-            var chat = String.fromCharCode(97 + i);
-            lowcaseArr.push(chat);
-            uppercaseArr.push(chat.toUpperCase());
-            if (i < 10) {
-                numArr.push(i);
-            }
-        }
-        var chatArr = lowcaseArr.concat(uppercaseArr);
-        var backStr = [];
-        for (var i = 0; i < leg; i++) {
-            if (i == 0) {
-                backStr.push(chatArr[parseInt(Math.random() * chatArr.length)]);
-            } else {
-                var numOrChat = parseInt(Math.random() * 2);
-                if (numOrChat == 0) {
-                    backStr.push(numArr[parseInt(Math.random() * numArr.length)]);
-                } else {
-                    backStr.push(chatArr[parseInt(Math.random() * chatArr.length)]);
-                }
-            }
-        }
-        return backStr.join('');
-    }
-}
-
-/**************************** canvas *****************************/
-CanvasRenderingContext2D.prototype.sector = function(xAxis, yAxis, radius, startAngle, endAngle, bgColor) {
-    'use strict';
-    this.moveTo(xAxis, yAxis);
-    this.arc(xAxis, yAxis, radius, startAngle, endAngle);
-    this.lineTo(xAxis, yAxis);
-    this.fillStyle = bgColor;
-    this.fill();
-    this.save();
-};
-/**************************** array *****************************/
-if (typeof Array.prototype.unique != 'function') {
-    // 一维数组去重
-    Array.prototype.unique = function(key) {
-        'use strict';
-        var arr = this;
-        var n = [arr[0]];
-        for (var i = 1; i < arr.length; i++) {
-            if (key === undefined) {
-                if (n.indexOf(arr[i]) == -1) n.push(arr[i]);
-            } else {
-                inner: {
-                    var has = false;
-                    for (var j = 0; j < n.length; j++) {
-                        if (arr[i][key] == n[j][key]) {
-                            has = true;
-                            break inner;
-                        }
-                    }
-                }
-                if (!has) {
-                    n.push(arr[i]);
-                }
-            }
-        }
-        return n;
-    }
-}
 String.prototype.renderHTML = function(obj) {
     var html = this;
     var reg = new RegExp('\\$\\{[\\s\\w_]+\\}', 'g');
@@ -348,6 +197,113 @@ String.prototype.mergeParams = function(obj) {
         return this;
     }
 };
+String.prototype.decode = function() {
+    var str = this.toString();
+    try {
+        str = decodeURIComponent(str)
+    } catch (e) {}
+    return str;
+};
+String.prototype.encode = function() {
+    return encodeURIComponent(this.toString())
+};
+/**************************** window *****************************/
+
+function toUrl(obj) {
+    if (obj && obj instanceof Object) {
+        var arr = [];
+        for (var i in obj) {
+            if (obj.hasOwnProperty(i)) {
+                if (Array.isArray(obj[i])) {
+                    obj[i].forEach(function(v) {
+                        arr.push(escape(i) + '=' + escape(v));
+                    });
+                } else {
+                    if (typeof obj[i] == 'function') obj[i] = obj[i]();
+                    if (obj[i] == null || obj[i] == undefined) obj[i] = '';
+                    arr.push(escape(i) + '=' + escape(obj[i]));
+                }
+            }
+        }
+        return arr.join('&').replace(/%20/g, '+');
+    } else {
+        return obj;
+    }
+};
+function randomString() {
+    var str = 'str';
+    str += Math.random() + new Date().getTime();
+    str = str.replace('.', '');
+    return str;
+};
+function uuid() {
+    'use strict';
+    var leg = arguments.length ? arguments[0] : 32;
+    var lowcaseArr = [];
+    var uppercaseArr = [];
+    var numArr = [];
+    for (var i = 0; i < 26; i++) {
+        var chat = String.fromCharCode(97 + i);
+        lowcaseArr.push(chat);
+        uppercaseArr.push(chat.toUpperCase());
+        if (i < 10) {
+            numArr.push(i);
+        }
+    }
+    var chatArr = lowcaseArr.concat(uppercaseArr);
+    var backStr = [];
+    for (var i = 0; i < leg; i++) {
+        if (i == 0) {
+            backStr.push(chatArr[parseInt(Math.random() * chatArr.length)]);
+        } else {
+            var numOrChat = parseInt(Math.random() * 2);
+            if (numOrChat == 0) {
+                backStr.push(numArr[parseInt(Math.random() * numArr.length)]);
+            } else {
+                backStr.push(chatArr[parseInt(Math.random() * chatArr.length)]);
+            }
+        }
+    }
+    return backStr.join('');
+}
+
+/**************************** canvas *****************************/
+//任意扇形
+CanvasRenderingContext2D.prototype.sector = function(xAxis, yAxis, radius, startAngle, endAngle, bgColor) {
+    'use strict';
+    this.moveTo(xAxis, yAxis);
+    this.arc(xAxis, yAxis, radius, startAngle, endAngle);
+    this.lineTo(xAxis, yAxis);
+    this.fillStyle = bgColor;
+    this.fill();
+    this.save();
+};
+/**************************** array *****************************/
+// 一维数组去重
+Array.prototype.unique = function(key) {
+    'use strict';
+    var arr = this;
+    var n = [arr[0]];
+    for (var i = 1; i < arr.length; i++) {
+        if (key === undefined) {
+            if (n.indexOf(arr[i]) == -1) n.push(arr[i]);
+        } else {
+            inner: {
+                var has = false;
+                for (var j = 0; j < n.length; j++) {
+                    if (arr[i][key] == n[j][key]) {
+                        has = true;
+                        break inner;
+                    }
+                }
+            }
+            if (!has) {
+                n.push(arr[i]);
+            }
+        }
+    }
+    return n;
+}
 var ajax = function(options) {
     function empty() {}
     var opt = {
@@ -380,7 +336,7 @@ var ajax = function(options) {
             clearTimeout(abortTimeout);
             var result, error = false,
                 dataType;
-            if ((xhr.status >= 200 && xhr.status < 300) || xhr.status == 304 || (xhr.status == 0 && location.protocol == 'file:')) {
+            if ((xhr.status >= 200 && xhr.status < 300) || xhr.status == 304 || (xhr.status == 0 && opt.data.parseURL().protocol == 'file:')) {
                 if (xhr.responseType == 'arraybuffer' || xhr.responseType == 'blob') {
                     result = xhr.response;
                 } else {
@@ -436,13 +392,11 @@ var request = (function() {
         if (req.hasOwnProperty(i)) {
             var v = req[i];
             var k = i.toLowerCase();
-            // 过滤微信加的参数，导致无法支付的问题 form=groupmessage
-            if (k != 'from') {
-                if (isNaN(parseInt(v))) {
-                    nReq[k] = v;
-                } else {
-                    nReq[k] = v * 1;
-                }
+            //将true,undefined,number,null,等转成对应数据类型，而不是统一的字符串'true','number'...
+            if (/^(\d+|true|false|undefined|null)$/.test(v)) {
+                nReq[k] = eval(v);
+            } else {
+                nReq[k] = v;
             }
         }
     }
@@ -529,26 +483,44 @@ function loadFile(files, back) {
     var loaded = 0;
     for (var i = 0; i < list.length; i++) {
         var file = list[i];
-        var iscss = /css$/.test(file);
-        if (iscss) {
-            loadCss(file, function() {
+        var isCSS = /\.css/.test(file);
+        var isJS = /\.js/.test(file);
+        var isHTML = /\.html/.test(file);
+        var url = file.mergeParams({ t: new Date().getTime() });
+        if (isCSS) {
+            loadCss(url, function() {
                 common();
             }, function() {
                 common();
             });
-        } else {
-            loadScript(file, function() {
+        } else if (isJS) {
+            loadScript(url, function() {
                 common();
             }, function() {
                 common();
+            });
+        } else if (isHTML) {
+            ajax({
+                url: url,
+                dataType: 'html',
+                success: function(d) {
+                    common(d);
+                },
+                error: function(e) {
+                    common(e);
+                }
             });
         }
     }
 
-    function common() {
+    function common(text) {
         loaded++;
         if (list.length == loaded) {
-            back();
+            if (text != undefined) {
+                back(text);
+            } else {
+                back();
+            }
         }
     };
 };
@@ -565,20 +537,6 @@ function setPageTitle(title) {
             }, 9);
         }
     }
-};
-if (typeof String.prototype.decode != 'function') {
-    String.prototype.decode = function() {
-        var str = this.toString();
-        try {
-            str = decodeURIComponent(str)
-        } catch (e) {}
-        return str;
-    };
-};
-if (typeof String.prototype.encode != 'function') {
-    String.prototype.encode = function() {
-        return encodeURIComponent(this.toString())
-    };
 };
 //加法函数
 Number.prototype.plus = function(arg) {
