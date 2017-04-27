@@ -1,4 +1,4 @@
-##javascriptFuction
+# javascriptFuction
 
 #### 获取一个最近的祖先元素 closet
 ```
