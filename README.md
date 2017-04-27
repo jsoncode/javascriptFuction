@@ -133,3 +133,35 @@ location.href.encode();
 
 ```
 
+新增链接参数合并方法
+```
+'http://a.com?a=1'.mergeParams({b:2,c:[1,2]}); // http://a.com?a=1&b=2&c=1&c=2
+```
+
+新增html拼接方法：
+
+```
+'http://a.com?a=${a}&b=${b}'.renderHTML({a:1,b:2}); // http://a.com?a=1&b=2 ,解决复杂字符串拼接繁琐易出错的问题
+```
+
+添加校验港澳台身份证，大陆护照，身份证格式，格式正确，返回true,否则false
+
+checkIdCard.zh('大陆身份证');
+checkIdCard.passport('大陆身护照');//其他护照未知
+checkIdCard.officers('军官证');
+checkIdCard.hk('香港身份证');
+checkIdCard.mac('澳门身份证');
+checkIdCard.tw('台湾身份证');
+
+
+新增H5上传文件方法uploadFile(file,name,back)
+
+```
+input.addEventListener('change',function () {
+    uploadFile(this.files[0],'testFile',function (data) {
+        console.log(data);
+    });
+})
+```
+
+
