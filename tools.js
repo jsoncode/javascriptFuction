@@ -221,23 +221,27 @@ String.prototype.dateFormat = function(format) {
 }
 
 /**************************** window *****************************/
-if (typeof window.Obj2Url != 'function') {
-    window.obj2Url = function(obj) {
-        'use strict';
-        if (obj && obj instanceof Object) {
-            var arr = [];
-            for (var i in obj) {
-                if (obj.hasOwnProperty(i)) {
+
+function toUrl(obj) {
+    if (obj && obj instanceof Object) {
+        var arr = [];
+        for (var i in obj) {
+            if (obj.hasOwnProperty(i)) {
+                if (Array.isArray(obj[i])) {
+                    obj[i].forEach(function(v) {
+                        arr.push(escape(i) + '=' + escape(v));
+                    });
+                } else {
                     if (typeof obj[i] == 'function') obj[i] = obj[i]();
-                    if (obj[i] == null) obj[i] = '';
+                    if (obj[i] == null || obj[i] == undefined) obj[i] = '';
                     arr.push(escape(i) + '=' + escape(obj[i]));
                 }
             }
-            return arr.join('&').replace(/%20/g, '+');
-        } else {
-            return obj;
         }
-    };
+        return arr.join('&').replace(/%20/g, '+');
+    } else {
+        return obj;
+    }
 };
 if (typeof window.randomString != 'function') {
     window.randomString = function() {
