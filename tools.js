@@ -83,10 +83,11 @@ if (typeof String.prototype.parseURL != 'function') {
         a.href = url;
         return {
             source: url,
-            protocol: a.protocol.replace(':', ''),
-            host: a.hostname,
+            protocol: a.protocol,
+            origin: a.origin,
+            hostname: a.hostname,
             port: a.port,
-            query: a.search,
+            search: a.search,
             file: (a.pathname.match(/\/([^\/?#]+)$/i) || [, ''])[1],
             hash: a.hash.replace('#', ''),
             pathname: a.pathname.replace(/^([^\/])/, '/$1'),
@@ -322,7 +323,31 @@ if (typeof Array.prototype.unique != 'function') {
         return n;
     }
 }
-
+String.prototype.renderHTML = function(obj) {
+    var html = this;
+    var reg = new RegExp('\\$\\{[\\s\\w_]+\\}', 'g');
+    if (typeof obj === 'string') {
+        html = html.replace(reg, obj);
+    } else {
+        html = html.replace(reg, function(v) {
+            var key = v.replace(/\$\{\s*|\s*\}/g, '');
+            v = obj[key];
+            return v;
+        });
+    };
+    return html;
+};
+String.prototype.mergeParams = function(obj) {
+    if (obj) {
+        var url = this;
+        var urlObj = url.parseURL();
+        var params = toUrl(Object.assign({}, obj, urlObj.params));
+        url = urlObj.origin + urlObj.pathname + '?' + params;
+        return url;
+    } else {
+        return this;
+    }
+};
 var ajax = function(options) {
     function empty() {}
     var opt = {
