@@ -650,7 +650,7 @@ var checkIdCard = {
         }
     },
     officers:function (number) {
-        // 护照
+        // 军官证
         var num = number.replace(/\s+/g, '');
         if (/^\d{8}$/.test(num)) {
             return true;
