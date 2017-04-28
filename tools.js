@@ -742,14 +742,19 @@ function checkFileType(type, file, back) {
         var reader = new FileReader();
         reader.readAsArrayBuffer(file);
         reader.addEventListener("load", function(e) {
+            // 读取二进制，截取前几个字节             
             var slice = e.target.result.slice(0, sliceSize);
+            // 释放内存
             reader = null;
             if (slice && slice.byteLength == sliceSize) {
+                // 将二进制转成十进制array
                 var view = new Uint8Array(slice);
                 var arr = [];
                 view.forEach(function(v) {
+                    // 将十进制转成16进制
                     arr.push(v.toString(16));
                 });
+                // 释放内存
                 view = null;
                 var idx = arr.join(' ').indexOf(imgType);
                 if (idx > -1) {
