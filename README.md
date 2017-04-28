@@ -187,3 +187,23 @@ input.addEventListener('change',function () {
 ```
 
 
+#### 部分安卓机在上传文件时，无法获取文件类型的问题
+
+```
+input.addEventListener(function(){
+    var file = this.files[0];
+    if(file.type==''){
+        // 第一个参数支持单类型，或多类型，多类型时用竖线分隔，用于生成正则式
+        checkFileType('(png|jpg|jpeg|mp4|mov|m4v|ogg)',file,function(fileType){
+            console.log(fileType);
+            //'png'
+        });
+        checkFileType('jpg',file,function(fileType){
+            console.log(fileType);
+            //false
+        });
+    }
+});
+```
+
+
