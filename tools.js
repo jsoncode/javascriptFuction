@@ -393,7 +393,7 @@ var request = (function() {
             var v = req[i];
             var k = i.toLowerCase();
             //将true,undefined,number,null,等转成对应数据类型，而不是统一的字符串'true','number'...
-            if (/^(\d+|true|false|undefined|null)$/.test(v)) {
+            if (/^(\d+|true|false|undefined|null)$/.test(v) && v.length<11) {
                 nReq[k] = eval(v);
             } else {
                 nReq[k] = v;
