@@ -1,4 +1,42 @@
-
+//给el元素模拟一个ev事件
+function fireEvent(el, ev) {
+    var evt;
+    if (document.createEvent) {
+        evt = document.createEvent("MouseEvents");
+        evt.initMouseEvent(ev, true, true, window,
+            0, 0, 0, 0, 0, false, false, false, false, 0, null);
+        el.dispatchEvent(evt);
+    } else if (el.fireEvent) { // IE 
+        el.fireEvent('on' + ev);
+    }
+}
+//自动填充微信公众号登录mp.weixin.qq.com
+function autoLoginMPWXQQCOM(username, paasword) {
+    var accountEle = $('[name=account]');
+    var passwordEle = $('[name=password]');
+    var btn_login = $('.btn_login');
+    setTimeout(function() {
+        setTimeout(function() {
+            accountEle.value = username;
+            fireEvent(accountEle, 'input');
+        }, 200);
+        setTimeout(function() {
+            fireEvent(accountEle, 'blur');
+        }, 300);
+    }, 100);
+    setTimeout(function() {
+        setTimeout(function() {
+            passwordEle.value = paasword;
+            fireEvent(passwordEle, 'input');
+        }, 200);
+        setTimeout(function() {
+            fireEvent(passwordEle, 'blur');
+        }, 300);
+    }, 500);
+    setTimeout(function () {
+        fireEvent(btn_login, 'click');
+    }, 1000);
+}
 Date.prototype.format = function(formatString) {
     'use strict';
     var o = {
