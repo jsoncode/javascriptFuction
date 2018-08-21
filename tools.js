@@ -37,6 +37,45 @@ function autoLoginMPWXQQCOM(username, paasword) {
         fireEvent(btn_login, 'click');
     }, 1000);
 }
+//兼容低版本浏览器，不支持原生closest方法的情况
+if (typeof Element.prototype.closest != 'function') {
+    var ep = Element.prototype;
+    ep.matches = ep.matches || ep.matchesSelector || ep.webkitMatchesSelector || ep.msMatchesSelector || function (selector) {
+        var node = this,
+            nodes = (node.parentNode || node.document).querySelectorAll(selector),
+            i = -1;
+        while (nodes[++i] && nodes[i] != node) ;
+        return !!nodes[i];
+    };
+    ep.closest = ep.closest || function (selector) {
+        var el = this;
+        while (el.matches && !el.matches(selector)) el = el.parentNode;
+        return el.matches ? el : null;
+    }
+}
+;
+//兼容低版本浏览器，不支持原生assign方法的情况
+if (typeof Object.assign != 'function') {
+    Object.assign = function (target) {
+        if (target == null) {
+            throw new TypeError('Cannot convert undefined or null to object');
+        }
+        ;
+        target = Object(target);
+        for (var index = 1; index < arguments.length; index++) {
+            var source = arguments[index];
+            if (source != null) {
+                for (var key in source) {
+                    if (Object.prototype.hasOwnProperty.call(source, key)) {
+                        target[key] = source[key];
+                    }
+                }
+            }
+        }
+        ;
+        return target;
+    };
+}
 Date.prototype.format = function(formatString) {
     'use strict';
     var o = {
