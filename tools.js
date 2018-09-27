@@ -1,3 +1,285 @@
+//添加promise ajax , indexedDB api
+var tools = {
+    shitIE: /Trident|msie|rv:/i.test(navigator.userAgent),
+    /**
+     * 原生ajax方法，仅用于不支持promise的情况下的请求
+     * @params: method string
+     * @params: url string
+     * @params: success function
+     * @params: error function
+     * @return: xhr
+     * 
+     */
+    ajax: function(method, url, success, error) {
+        var error = error || function() {};
+        // 只在不兼容promise情况下请求兼容js文件用
+        var xhr = new XMLHttpRequest();
+        xhr.open(method.toUpperCase(), url, true);
+        xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+        xhr.onerror = error;
+        xhr.onloadend = function() {
+            if ((xhr.status >= 200 && xhr.status < 300) || xhr.status === 304) {
+                success(xhr);
+            } else {
+                error(xhr);
+            }
+        }
+        xhr.send();
+    },
+    /**
+     * 原生ajax方法，支持promise的情况下使用
+     * @params: options object
+     * options url string
+     * options method string
+     * options data object
+     * options progress function
+     * options complete function
+     * options headers object
+     */
+    promiseAjax: function(options) {
+        var url = options.url || '';
+        var method = options.method || 'GET';
+        var data = options.data || null;
+        var progress = options.progress || function() {};
+        var complete = options.complete || function() {};
+        var headers = options.headers || {
+            'Content-type': 'application/x-www-form-urlencoded'
+        };
+        return new Promise(function(success, error) {
+            var xhr = new XMLHttpRequest();
+            xhr.open(method.toUpperCase(), url, true);
+            for (var k in headers) {
+                xhr.setRequestHeader(k, headers[k]);
+            }
+            xhr.onerror = error;
+            xhr.onprogress = progress;
+            xhr.onloadend = function() {
+                complete();
+                if ((xhr.status >= 200 && xhr.status < 300) || xhr.status === 304) {
+                    success(xhr);
+                } else {
+                    error({
+                        errorType: 'status_error',
+                        xhr: xhr
+                    })
+                }
+            }
+
+            try {
+                xhr.send(data);
+            } catch (e) {
+                error({
+                    errorType: 'send_error',
+                    error: e
+                });
+            }
+        })
+    },
+    /**
+     * 原生ajax get
+     */
+    promiseGet: function(url, data) {
+        var that = this;
+        return this.promiseAjax({
+            url: url,
+            data: data,
+            method: 'GET',
+        });
+    },
+    /**
+     * 原生ajax post
+     */
+    promisePost: function(url, data) {
+        var that = this;
+        return this.promiseAjax({
+            url: url,
+            data: data,
+            method: 'POST',
+        });
+    },
+    /**
+     * indexeddb的配置
+     */
+    dbOptions: {
+        dbName: 'school',
+        tbName: 'class',
+        keyPath: 'name',
+    },
+    /**
+     * 获取数据库指定名字的数据
+     */
+    getIndexVersion: function(back) {
+        var that = this;
+        return new Promise(function(success, error) {
+            var request = indexedDB.open(that.dbOptions.dbName);
+            // 创建数据表
+            request.onupgradeneeded = function(e) {
+                e.target.result.createObjectStore(that.dbOptions.tbName, { keyPath: that.dbOptions.keyPath });
+            };
+            request.onsuccess = function(e) {
+                var db = e.target.result;
+                var version = db.version;
+                that.dbOptions.version = version;
+                success(db);
+            }
+            request.onerror = function() {
+                error(event);
+            };
+        });
+    },
+    getIndexedDB: function(name) {
+        var that = this;
+        return new Promise(function(success, error) {
+            // 打开数据库
+            that.getIndexVersion().then(function(db) {
+                var transaction = db.transaction(that.dbOptions.tbName, 'readwrite');
+                var store = transaction.objectStore(that.dbOptions.tbName);
+                var result = store.get(name);
+                result.onsuccess = function(e) {
+                    var obj = e.target.result;
+                    success(obj);
+                };
+                result.onerror = function(e) {
+                    error(obj);
+                };
+            });
+        });
+    },
+    /**
+     * 获取数据所有数据
+     */
+    getIndexedDBAll: function() {
+        var that = this;
+        return new Promise(function(success, error) {
+            // 打开数据库
+            that.getIndexVersion().then(function(db) {
+                var store = db.transaction(that.dbOptions.tbName, 'readwrite').objectStore(that.dbOptions.tbName);
+                var cursorRequest = store.openCursor();
+                var list = [];
+                cursorRequest.onsuccess = function(event) {
+                    var cursor = event.target.result;
+                    if (cursor) {
+                        var value = cursor.value;
+                        list.push(value);
+                        cursor.continue();
+                    } else {
+                        success(list);
+                    }
+                }
+            });
+        });
+    },
+    /**
+     * 保存一条或多条数据
+     * @params fileList obj/list
+     */
+    saveIndexedDB: function(fileList) {
+        var that = this;
+        var list = Array.isArray(fileList) ? fileList : [fileList];
+        return new Promise(function(success, error) {
+            // 打开数据库
+            that.getIndexVersion().then(function(db) {
+                var store = null;
+                if (db.objectStoreNames.length) {
+                    store = db.transaction(that.dbOptions.tbName, 'readwrite').objectStore(that.dbOptions.tbName);
+                    save(store, list, success, error);
+                }
+            });
+        });
+
+        function save(store, list, success, error) {
+            var loaded = 0;
+            list.forEach(function(obj) {
+                var result = store.put(obj);
+                result.onsuccess = function(event) {
+                    loaded++;
+                    if (loaded === list.length) {
+                        if (list.length == 1) {
+                            success(list[0]);
+                        } else {
+                            success(list);
+                        }
+                    }
+                };
+                result.onerror = function(event) {
+                    loaded++;
+                    if (loaded === list.length) {
+                        if (list.length == 1) {
+                            error(list[0]);
+                        } else {
+                            error(list);
+                        }
+                    }
+                };
+            })
+        }
+    },
+    /**
+     * 删除一条数据
+     */
+    deleteDB: function(name) {
+        var that = this;
+        return new Promise(function(success, error) {
+            // 打开数据库
+            that.getIndexVersion().then(function(db) {
+                var database = e.target.result;
+                var store = database.transaction(that.dbOptions.tbName, 'readwrite').objectStore(that.dbOptions.tbName);
+                var result = store.delete(name);
+                result.onsuccess = function(event) {
+                    success(name)
+                };
+                result.onerror = function(event) {
+                    error(event)
+                };
+            });
+        });
+    },
+
+    getStorageOrServer: function(url, key) {
+        var that = this;
+        var key = key || url;
+        return new Promise(function(success, error) {
+            that.getIndexedDB(key).then(function(obj) {
+                if (obj && obj.file && md5(obj.file) === that.fileMap[key].hash) {
+                    success(obj.file);
+                } else {
+                    that.promiseGet(url).then(function(xhr) {
+                        var str = xhr.response;
+                        if (md5(str) === that.fileMap[key].hash) {
+                            that.saveIndexedDB({
+                                name: key,
+                                file: str,
+                                hash: that.fileMap[key].hash,
+                            })
+                            success(str);
+                        } else {
+                            error(url + ' server hash is ' + that.fileMap[key].hash + ' the file hash is ' + md5(str));
+                        }
+                    }).catch(error);
+                }
+            }).catch(error);
+        });
+    },
+    getStorage: function(name) {
+        return localStorage.getItem(location.host + '.' + name);
+    },
+    saveStorage: function(name, str) {
+        localStorage.setItem(location.host + '.' + name, str);
+    },
+    removeStorage: function(key) {
+        localStorage.removeItem(location.host + '.' + name);
+    },
+    getSession: function(name) {
+        return sessionStorage.getItem(location.host + '.' + name);
+    },
+    saveSession: function(name, str) {
+        sessionStorage.setItem(location.host + '.' + name, str);
+    },
+    removeSession: function(key) {
+        sessionStorage.removeItem(location.host + '.' + name);
+    }
+}
+
 //给el元素模拟一个ev事件
 function fireEvent(el, ev) {
     var evt;
