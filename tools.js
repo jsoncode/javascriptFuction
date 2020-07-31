@@ -1,5 +1,25 @@
 //添加promise ajax , indexedDB api
 var tools = {
+    // 缓冲动画
+    eashOut: function (start, end, rate, callback) {
+        var _end = end;
+        if (start == end || typeof start != 'number') {
+            return;
+        }
+        end = end || 0;
+        rate = rate || 2;
+
+        var step = function () {
+            start = start + (end - start) / rate;
+            if (Math.abs(start - _end) < 1) {
+                callback(end, true);
+                return;
+            }
+            callback(start, false);
+            requestAnimationFrame(step);
+        };
+        step();
+    },
     shitIE: /Trident|msie|rv:/i.test(navigator.userAgent),
     /**
      * 原生ajax方法，仅用于不支持promise的情况下的请求
@@ -8,7 +28,6 @@ var tools = {
      * @params: success function
      * @params: error function
      * @return: xhr
-     * 
      */
     ajax: function(method, url, success, error) {
         var error = error || function() {};
